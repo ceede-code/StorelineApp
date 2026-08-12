@@ -19,6 +19,14 @@ body{
     width: 100vw;
 }
 
+a{
+    text-decoration: none;
+}
+
+#logo{
+    color:white;
+}
+
 /* .items-collection{
     this container will ensure that items are catered for exlusively 
     display: flex;
@@ -221,7 +229,7 @@ footer{
 }
 
 
-@media (max-width : 890px) and (min-width :500px) {
+@media (max-width : 890px) {
     .mobile{
         display: block;
     }
@@ -240,11 +248,21 @@ footer{
         /* height: 80%; */
         text-align: center;
     }
+
+    .showcase-categories{
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 150px !important;
+    }
+
+    #gs{
+        display: none !important;
+    }
 }
 
-/* @media(max-width:500px){
-    .item{
-        width:65% ;
-    }
-} */
+@media(min-width:890px){
+   #gs-m{
+       display: none !important;
+   }
+}
 
