@@ -9,7 +9,7 @@ function renderProducts(items) {
       <h4>${item.name}</h4>
       <p class="price">
         <strong>${item.price} ${item.currency}</strong>
-        <button id="cb" class="add-cart">Add to Cart <span class="material-symbols-outlined">Shopping_cart</span></button>
+        <button id="cb" class="add-cart" onClick="notifier()">Add to Cart <span class="material-symbols-outlined">Shopping_cart</span></button>
       </p>
       <div class="category">
         <span>${item.category}</span>
@@ -20,3 +20,5 @@ function renderProducts(items) {
 }
 
 renderProducts(products);
+
+let cart = [];
