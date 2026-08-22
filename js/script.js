@@ -3,21 +3,26 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { products } from "./itemData.js";
 
-export let cart = [];
+export const cart = [];
 
 export { products };
 export let currentUser = null;
 
 export function loadCart() {
   const savedCart = localStorage.getItem('cart');
+  cart.length = 0;
   if (savedCart) {
     try {
-      cart = JSON.parse(savedCart);
+      const parsed = JSON.parse(savedCart);
+      if (Array.isArray(parsed)) {
+        cart.push(...parsed);
+      }
     } catch (e) {
-      cart = [];
+      console.warn(e);
     }
-    updateCartCount();
   }
+  updateCartCount();
+  window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
 }
 
 export function saveCart() {
@@ -25,6 +30,8 @@ export function saveCart() {
   if (currentUser) {
     saveUserCart(currentUser.uid);
   }
+  updateCartCount();
+  window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
 }
 
 export function updateCartCount() {
@@ -62,8 +69,10 @@ export async function logoutUser() {
 
     await signOut(auth);
     currentUser = null;
-    cart = [];
+    cart.length = 0;
     localStorage.removeItem('cart');
+    updateCartCount();
+    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
     showNotification('Logged out');
     window.location.href = 'login.html';
   } catch (error) {
@@ -82,7 +91,6 @@ export function addToCart(productId) {
       cart.push({ ...product, quantity: 1 });
     }
     saveCart();
-    updateCartCount();
     showNotification(`${product.name} added to cart!`);
   } else {
     console.warn('addToCart: no product found with id', productId);
@@ -90,9 +98,10 @@ export function addToCart(productId) {
 }
 
 export function removeFromCart(productId) {
-  cart = cart.filter(item => item.id !== productId);
+  const updated = cart.filter(item => item.id !== productId);
+  cart.length = 0;
+  cart.push(...updated);
   saveCart();
-  updateCartCount();
 }
 
 export function updateQuantity(productId, newQuantity) {
@@ -103,7 +112,6 @@ export function updateQuantity(productId, newQuantity) {
     } else {
       item.quantity = newQuantity;
       saveCart();
-      updateCartCount(); 
     }
   }
 }
@@ -133,9 +141,18 @@ async function loadUserCart(userId) {
   try {
     const docSnap = await getDoc(doc(db, 'carts', userId));
     if (docSnap.exists()) {
-      cart = docSnap.data().items || [];
-      localStorage.setItem('cart', JSON.stringify(cart));
-      updateCartCount();
+      const cloudItems = docSnap.data().items || [];
+      if (cloudItems.length > 0) {
+        cart.length = 0;
+        cart.push(...cloudItems);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCount();
+        window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { cart } }));
+      } else if (cart.length > 0) {
+        await saveUserCart(userId);
+      }
+    } else if (cart.length > 0) {
+      await saveUserCart(userId);
     }
   } catch (error) {
     console.error('Error loading user cart:', error);
@@ -152,6 +169,8 @@ async function saveUserCart(userId) {
     console.error('Error saving user cart:', error);
   }
 }
+
+loadCart();
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCart();
