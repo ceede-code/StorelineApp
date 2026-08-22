@@ -45,19 +45,23 @@ export function updateUserUI(user) {
     } else {
       userDisplay.innerHTML = `Profile <span class="material-symbols-outlined">account_circle</span>`;
       userDisplay.title = '';
-      userDisplay.style.cursor = '';
+      userDisplay.style.cursor = 'pointer';
     }
   }
 }
 
 export async function logoutUser() {
   try {
-
     if (currentUser && cart.length > 0) {
-      await saveUserCart(currentUser.uid);
+      try {
+        await saveUserCart(currentUser.uid);
+      } catch (err) {
+        console.warn(err);
+      }
     }
 
     await signOut(auth);
+    currentUser = null;
     cart = [];
     localStorage.removeItem('cart');
     showNotification('Logged out');
@@ -149,18 +153,15 @@ async function saveUserCart(userId) {
   }
 }
 
-
-// ------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   loadCart();
 
   const userDisplay = document.getElementById('user-display');
-
-  const profileTrigger = userDisplay ? userDisplay.closest('li') : null;
-  if (profileTrigger) {
-    profileTrigger.style.cursor = 'pointer';
-    profileTrigger.addEventListener('click', () => {
-      if (currentUser) {
+  if (userDisplay) {
+    userDisplay.style.cursor = 'pointer';
+    userDisplay.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentUser || auth.currentUser) {
         if (confirm('Log out of your account?')) {
           logoutUser();
         }
@@ -174,9 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser = user;
     updateUserUI(user);
 
-    const currentPage = window.location.pathname;
-    const isAuthPage = currentPage.includes('login.html') || currentPage.includes('signup.html');
-
+    const currentPage = window.location.pathname.toLowerCase();
+    const isAuthPage = currentPage.includes('login') || currentPage.includes('signup');
 
     if (!user && !isAuthPage) {
       window.location.href = 'login.html';
